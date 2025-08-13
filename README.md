@@ -1,30 +1,30 @@
-# BookStack Deployment Issue
+# BookStack Deployment Issue - Troubleshooting Log
 
 ## Summary
 
-The user is encountering a `502 Bad Gateway` error when trying to access their BookStack instance through a reverse proxy. The BookStack application is containerized using Docker Compose and connects to a separate, containerized database (initially PostgreSQL, then MariaDB). The core issue appears to be the BookStack application failing to properly connect to the database.
+I'm experiencing a `502 Bad Gateway` error when trying to access my BookStack instance through a reverse proxy. I've containerized BookStack and a database using Docker Compose, and I'm struggling to get the application to connect to the database.
 
-## Troubleshooting Steps Attempted
+## Troubleshooting Steps
 
 1.  **Initial Setup (PostgreSQL):**
-    *   Deployed BookStack and PostgreSQL database using separate `docker-compose.yml` files.
-    *   Encountered an error in the BookStack container logs: `could not find driver (Connection: pgsql...)`. This indicated a missing or improperly configured PHP PostgreSQL extension.
-    *   Attempted to use the `linuxserver/mods:bookstack-php-pgsql` Docker mod to install the PHP extension. However, the mod failed to install due to network issues or caching problems during container initialization.
-    *   Attempted to add the `depends_on` to the docker-compose to ensure the db was running before the app started
-    *   Attempted to add a `command` to the application compose file to install the necessary php extension.
+    *   I set up BookStack and a PostgreSQL database using separate `docker-compose.yml` files.
+    *   The BookStack container logs showed a "could not find driver (Connection: pgsql...)" error, indicating a problem with the PHP PostgreSQL extension.
+    *   I tried using the `linuxserver/mods:bookstack-php-pgsql` Docker mod to install the extension. However, the mod failed to install, likely due to network issues during container creation. The logs showed an OFFLINE error.
+    *   I tried adding `depends_on` to the docker-compose file to ensure the database was running before the app started.
+    *   I tried adding a `command` to the application compose file to install the necessary PHP extension directly during container startup. This also did not resolve the issue.
 
 2.  **Switch to MariaDB:**
-    *   Decided to switch to MariaDB as an alternative database solution.
-    *   Modified both `docker-compose.yml` files to use MariaDB.
-    *   Updated the BookStack application's database connection settings (driver, host, port, database name, user, password) to match MariaDB.
-    *   Encountered a "depends on undefined service" error during `docker-compose up`.
+    *   I decided to switch to MariaDB as an alternative.
+    *   I modified both `docker-compose.yml` files to use MariaDB.
+    *   I updated the BookStack application's database connection settings (driver, host, port, database name, user, password) to match MariaDB.
+    *   I encountered a "depends on undefined service" error during `docker-compose up`. This was because I had the database defined in a separate compose file and was referencing it in the application compose file.
 
 ## Current Status
 
-The MariaDB database is confirmed to be running correctly. The "depends on undefined service" error was resolved by deploying the database before deploying the application.
-The user is still having issues and has not confirmed resolution.
+The MariaDB database is running. I resolved the "depends on undefined service" error by first deploying the database, and then deploying the application.
 
 ## Suspected Issues
- * Network isolation: The network may not be configured correctly, with external set to true in the app compose but the network is actually managed in the DB compose file.
- * DB not ready: The DB may not be ready to accept connections, even when the container is running
- * Reverse proxy misconfiguration: The reverse proxy may not be configured correctly.
+
+*   **Network configuration:** The network configuration might be incorrect. I have an external network defined in the app compose file, but the network is actually managed in the database compose file.
+*   **Database readiness:** The database might not be fully ready to accept connections even when the container is running. There could be a delay that BookStack isn't accounting for.
+*   **Reverse proxy:** There could be a problem with the reverse proxy configuration.
